@@ -20,6 +20,7 @@ local function claimPlot(plot)
 		local playerId = player.UserId
 		local ownerId = plot:GetAttribute("OwnerId")
 		local isClaimed = plot:GetAttribute("IsClaimed")
+		-- local plotColor = plot:GetAttribute("PlotColor")
 
 		if isClaimed then return end
 		
