@@ -1,4 +1,3 @@
-local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 
 local localPlayer = Players.LocalPlayer
@@ -13,5 +12,5 @@ local coinLabel = currencyFrame:WaitForChild("CoinLabel")
 coinLabel.Text = tostring(coins.Value)
 
 coins.Changed:Connect(function(newValue)
-    coinLabel.Text = tostring(newValue)
+	coinLabel.Text = tostring(newValue)
 end)

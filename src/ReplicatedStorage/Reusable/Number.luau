@@ -1,19 +1,19 @@
 local Number = {}
 
 function Number.add(number, amount)
-    number.Value += amount
+    return number + amount
 end
 
 function Number.subtract(number, amount)
-    number.Value -= amount
+    return number - amount
 end
 
 function Number.multiply(number, amount)
-    number.Value *= amount
+    return number * amount
 end
 
 function Number.divide(number, amount)
-    number.Value /= amount
+    return number / amount
 end
 
 function Number.formatNumber(number)
