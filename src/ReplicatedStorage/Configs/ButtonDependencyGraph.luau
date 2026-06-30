@@ -1,19 +1,19 @@
 local ButtonConfig = {
-    ["FirstButton"] = {
+    ["BtnDropper1"] = {
         Id = 1,
         Name = "First Dropper",
-        Target = "FirstDropper",
-        Type = "Economy",
+        Target = "BasicDropper",
+        Type = "Droppers",
         Price = 0,
         Dependency = nil
     },
-    ["Btn_Dropper2"] = {
+    ["BtnDropper2"] = {
         Id = 2,
         Name = "Basic Dropper",
         Target = "BasicDropper",
-        Type = "Economy",
+        Type = "Droppers",
         Price = 100,
-        Dependency = 1
+        Dependency = "BtnDropper1"
     }
 }
 return ButtonConfig
