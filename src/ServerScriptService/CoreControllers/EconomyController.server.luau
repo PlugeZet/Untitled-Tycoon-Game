@@ -13,7 +13,7 @@ local Conveyors = CollectionService:GetTagged("Conveyors")
 local Upgraders = CollectionService:GetTagged("Upgraders")
 local Collectors = CollectionService:GetTagged("Collectors")
 
-local ItemTemplate = ServerStorage.TycoonAssets:WaitForChild("Drops").DropTier1
+local ItemTemplate = ServerStorage.TycoonAssets:WaitForChild("Drops").Drop
 local conveyorSpeed = 10
 
 -- =================================
@@ -30,12 +30,16 @@ local function spawnItem(dropper)
 		if isActive then 
 			local clonedItem = ItemTemplate:Clone()
 			local ownerId = dropper.Parent.Parent.Parent:GetAttribute("OwnerId")
+			local price = dropper:GetAttribute("DropPrice")
+			local PriceLabel = clonedItem:FindFirstChild("DropPrice").PriceLabel
 
 			clonedItem:SetAttribute("OwnerId", ownerId)
+			clonedItem:SetAttribute("Price", price)
+			PriceLabel.Text = "$" .. price
 
 			clonedItem.CFrame = nozzle.CFrame
-			clonedItem.Parent = workspace
-			Debris:AddItem(clonedItem, 15)
+			clonedItem.Parent = workspace:WaitForChild("DropHandler")
+			Debris:AddItem(clonedItem, 20)
 		end
 		task.wait(2)		
 	end	
