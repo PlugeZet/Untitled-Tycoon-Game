@@ -4,7 +4,6 @@
 
 local CollectionService = game:GetService("CollectionService")
 local ServerStorage = game:GetService("ServerStorage")
-local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 
@@ -47,16 +46,13 @@ end
 
 local function setupConveyor(conveyor)
 	local texture = conveyor:WaitForChild("ConveyorTexture", 5)
+	conveyor.Anchored = true
+	conveyor.AssemblyLinearVelocity = conveyor.CFrame.RightVector * -conveyorSpeed
+
 	if texture then
 		texture.StudsPerTileU = conveyor.Size.Z
 		texture.StudsPerTileV = conveyor.Size.Z
 
-		conveyor.Anchored = true
-		conveyor.AssemblyLinearVelocity = conveyor.CFrame.RightVector * -conveyorSpeed
-
-		local info = TweenInfo.new(60, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1)
-		local tween = TweenService:Create(texture, info, {OffsetStudsU = conveyorSpeed * -60})
-		tween:Play()
 	end
 end
 
@@ -112,28 +108,39 @@ end
 -- =================================
 
 local function activateDropper(dropper)
-	task.spawn(function() spawnItem(dropper) end)
+	task.spawn(function()
+		spawnItem(dropper)
+	end)
 end
 
 local function activateConveyor(conveyor)
 	local isActive = conveyor:GetAttribute("IsActive")
 	if isActive then
-		task.spawn(function() setupConveyor(conveyor) end)
+		task.spawn(function()
+			setupConveyor(conveyor)
+		end)
 	end
 
 	conveyor:GetAttributeChangedSignal("IsActive"):Connect(function()
 		if conveyor:GetAttribute("IsActive") then
-			setupConveyor(conveyor)
+			task.spawn(function()
+				setupConveyor(conveyor)
+			end)
 		end
 	end)
 end
 
 local function activateUpgrader(upgrader)
-	task.spawn(function() setupUpgrader(upgrader) end)
+	task.spawn(function()
+		setupUpgrader(upgrader)
+	end)
 end
 
 local function activateCollector(collector)
-	task.spawn(function() setupCollector(collector) end)
+	task.spawn(function()
+		setupCollector(collector)
+	end)
+	
 end
 
 -- =================================
