@@ -21,14 +21,42 @@ local ButtonConfig = {
         Price = 500,
         Dependency = "BtnDropper2"
     },
+    ["BtnDropper4"] = {
+        Name = "Advanced Dropper",
+        Target = "AdvancedDropper",
+        Type = "Droppers",
+        Price = 800,
+        Dependency = "BtnDropper3"
+    },
+    ["BtnDropper5"] = {
+        Name = "Advanced Dropper",
+        Target = "AdvancedDropper",
+        Type = "Droppers",
+        Price = 1300,
+        Dependency = "BtnDropper4"
+    },
+    ["BtnDropper6"] = {
+        Name = "Advanced Dropper",
+        Target = "AdvancedDropper",
+        Type = "Droppers",
+        Price = 2000,
+        Dependency = "BtnDropper5"
+    },
     
     -- Upgraders
     ["BtnUpgrader1"] = {
-        Name = "Upgrader 1",
-        Target = "Upgrader1",
+        Name = "Basic Upgrader",
+        Target = "BasicUpgrader",
         Type = "Upgraders",
-        Price = 300,
-        Dependency = "BtnDropper1"
+        Price = 600,
+        Dependency = "BtnDropper3"
+    },
+    ["BtnUpgrader2"] = {
+        Name = "Advanced Upgrader",
+        Target = "AdvancedUpgrader",
+        Type = "Upgraders",
+        Price = 3500,
+        Dependency = "BtnDropper6"
     },
     
     -- Walls

@@ -21,12 +21,14 @@ local conveyorSpeed = 10
 
 local function spawnItem(dropper)
 	local nozzle = dropper:WaitForChild("Nozzle", 5)
-	if not nozzle then return end
+	if not nozzle then
+		return
+	end
 
 	while true do
 		local isActive = dropper:GetAttribute("IsActive")
 
-		if isActive then 
+		if isActive then
 			local clonedItem = ItemTemplate:Clone()
 			local ownerId = dropper.Parent.Parent.Parent:GetAttribute("OwnerId")
 			local price = dropper:GetAttribute("DropPrice")
@@ -40,8 +42,8 @@ local function spawnItem(dropper)
 			clonedItem.Parent = workspace:WaitForChild("DropHandler")
 			Debris:AddItem(clonedItem, 20)
 		end
-		task.wait(2)		
-	end	
+		task.wait(2)
+	end
 end
 
 local function setupConveyor(conveyor)
@@ -52,37 +54,57 @@ local function setupConveyor(conveyor)
 	if texture then
 		texture.StudsPerTileU = conveyor.Size.Z
 		texture.StudsPerTileV = conveyor.Size.Z
-
 	end
 end
 
 local function setupUpgrader(upgrader)
 	local upgraderRay = upgrader:WaitForChild("UpgraderRay", 5)
-	if upgraderRay then
-		upgraderRay.Touched:Connect(function(otherPart)
-			local ownerId = otherPart:GetAttribute("OwnerId")
-			local price = otherPart:GetAttribute("Price")
-			local isUpgraded = otherPart:GetAttribute("UpgradedBy_" .. upgrader.Name)
+	if not upgraderRay then
+		return
+	end
 
-			if ownerId and price and not isUpgraded then
-				otherPart:SetAttribute("UpgradedBy_" .. upgrader.Name, true)
+	local priceMultiplier = upgrader:GetAttribute("PriceMultiplier") or 2
+	local sizeMultiplier = upgrader:GetAttribute("SizeMultiplier") or 1.2
 
-				local player = Players:GetPlayerByUserId(ownerId)
-				if player then
-					local priceMultiplier = upgrader:GetAttribute("PriceMultiplier")
-					local sizeMultiplier = upgrader:GetAttribute("SizeMultiplier")
-					
-					otherPart.Size *= sizeMultiplier
-					otherPart:SetAttribute("Price", price * priceMultiplier)
+	upgraderRay.Touched:Connect(function(otherPart)
+		local ownerId = otherPart:GetAttribute("OwnerId")
+		local currentPrice = otherPart:GetAttribute("Price")
+
+		if not ownerId or not currentPrice then
+			return
+		end
+
+		local upgraderKey = "UpgradedBy_" .. upgrader.Name
+		local isUpgraded = otherPart:GetAttribute(upgraderKey)
+
+		if not isUpgraded then
+			otherPart:SetAttribute(upgraderKey, true)
+
+			local player = Players:GetPlayerByUserId(ownerId)
+
+			if player then
+				local newPrice = currentPrice * priceMultiplier
+
+				otherPart.Size *= sizeMultiplier
+				otherPart:SetAttribute("Price", newPrice)
+
+				local dropPriceGUI = otherPart:FindFirstChild("DropPrice")
+				if dropPriceGUI then
+					local priceLabel = dropPriceGUI:FindFirstChild("PriceLabel")
+					if priceLabel then
+						priceLabel.Text = "$" .. tostring(newPrice)
+					end
 				end
 			end
-		end)
-	end
+		end
+	end)
 end
 
 local function setupCollector(collector)
 	local collectPart = collector:WaitForChild("CollectPart", 5)
-	if not collectPart then return end
+	if not collectPart then
+		return
+	end
 	collectPart.Touched:Connect(function(otherPart)
 		local ownerId = otherPart:GetAttribute("OwnerId")
 		local price = otherPart:GetAttribute("Price")
@@ -92,7 +114,7 @@ local function setupCollector(collector)
 			if player then
 				local leaderstats = player:FindFirstChild("leaderstats")
 				if leaderstats then
-					local coins = leaderstats:FindFirstChild("Coins") 
+					local coins = leaderstats:FindFirstChild("Coins")
 					if coins then
 						coins.Value += price
 					end
@@ -140,21 +162,28 @@ local function activateCollector(collector)
 	task.spawn(function()
 		setupCollector(collector)
 	end)
-	
 end
 
 -- =================================
 -- Master Loop
 -- =================================
 
-for _, dropper in ipairs(Droppers) do activateDropper(dropper) end
+for _, dropper in ipairs(Droppers) do
+	activateDropper(dropper)
+end
 CollectionService:GetInstanceAddedSignal("Droppers"):Connect(activateDropper)
 
-for _, conveyor in ipairs(Conveyors) do activateConveyor(conveyor) end
+for _, conveyor in ipairs(Conveyors) do
+	activateConveyor(conveyor)
+end
 CollectionService:GetInstanceAddedSignal("Conveyors"):Connect(activateConveyor)
 
-for _, upgrader in ipairs(Upgraders) do activateUpgrader(upgrader) end
+for _, upgrader in ipairs(Upgraders) do
+	activateUpgrader(upgrader)
+end
 CollectionService:GetInstanceAddedSignal("Upgraders"):Connect(activateUpgrader)
 
-for _, collector in ipairs(Collectors) do activateCollector(collector) end
+for _, collector in ipairs(Collectors) do
+	activateCollector(collector)
+end
 CollectionService:GetInstanceAddedSignal("Collectors"):Connect(activateCollector)
