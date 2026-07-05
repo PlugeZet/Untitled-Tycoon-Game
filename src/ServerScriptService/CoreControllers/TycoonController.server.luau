@@ -9,8 +9,8 @@ local ButtonConfig = require(Configs:WaitForChild("ButtonDependencyGraph"))
 local Plots = CollectionService:GetTagged("Plots")
 local Buttons = CollectionService:GetTagged("Buttons")
 
-local StarterPlotTemplate = ServerStorage:WaitForChild("StarterPlot")
-local TycoonAssets = ServerStorage:WaitForChild("TycoonAssets")
+local StarterPlotTemplate = ServerStorage:WaitForChild("StarterPlot", 5)
+local TycoonAssets = ServerStorage:WaitForChild("TycoonAssets", 5)
 
 local function claimPlot(plot)
 	local claimDoor = plot:WaitForChild("ClaimDoor", 5)
@@ -60,13 +60,10 @@ local function initializePlot(plot)
 
 		if plot.PrimaryPart and masterClone.PrimaryPart then
 			masterClone:PivotTo(plot.PrimaryPart.CFrame)
-		else
-			warn("[DEBUG-ASSET] ⚠️ StarterPlot atau Plot tidak memiliki PrimaryPart yang disetel!")
 		end
 
 		local buttonFolder = masterClone:FindFirstChild("Buttons")
 		if buttonFolder then
-			print("BUTTON FOLDER FOUND")
 			for _, button in ipairs(buttonFolder:GetChildren()) do
 				if button.Name ~= "BtnDropper1" then
 					button.Transparency = 1
@@ -75,7 +72,6 @@ local function initializePlot(plot)
 				end
 			end
 		else
-			print("BUTTON FOLDER NOT FOUND")
 		end
 
 		for _, clonedChild in ipairs(masterClone:GetChildren()) do
@@ -88,7 +84,6 @@ local function initializePlot(plot)
 				if destination then
 					clonedChild.Parent = destination
 				else
-					warn("[DEBUG-ROUTE] ⚠️ Folder tujuan '" .. targetFolder .. "' tidak ditemukan di " .. plot.Name)
 					clonedChild:Destroy()
 				end
 			else
@@ -104,42 +99,47 @@ local function initializePlot(plot)
 	end)
 end
 
+local function setupButton(buttons)
+	for _, button in ipairs(buttons) do
+		local buttonData = ButtonConfig[button.Name]
+		if buttonData == nil then print("Button data not found"); return end
+		local priceTag = button:FindFirstChild("ButtonPrice"):FindFirstChild("ButtonFrame")
+		local buttonLabel = priceTag:FindFirstChild("ButtonLabel")
+		local priceLabel = priceTag:FindFirstChild("ButtonPriceLabel")
+		if priceLabel ~= nil and buttonLabel ~= nil then
+			buttonLabel.Text = buttonData.Name
+			priceLabel.Text = "$" .. buttonData.Price
+		else
+			print("Button price gui not found")
+		end
+	end
+end
+
 local function purchaseObject(button, plot)
 	if not plot:IsDescendantOf(workspace) then return end
-
 	local ButtonData = ButtonConfig[button.Name]
-	print("[DEBUG] Menyiapkan tombol: ", button.Name)
 
-	if not ButtonData then
-		warn("[DEBUG] Data tidak ditemukan untuk: " .. button.Name)
-		return
-	end
+	if not ButtonData then return end
 
 	local purchasedObjectsFolder = plot:FindFirstChild("PurchasedObjects")
 	local isProcessing = false
 
 	if ButtonData.Dependency ~= nil then
-		print("Dependency found", ButtonData.Dependency)
 		button.Transparency = 1
 		button.CanCollide = false
 		local priceGui = button:FindFirstChild("ButtonPrice")
 
-		if priceGui then
-			print("priceGui found")
-			priceGui.Enabled = false
-		end
+		if priceGui then priceGui.Enabled = false end
 
 		coroutine.resume(coroutine.create(function()
 			local dependencyData = ButtonConfig[ButtonData.Dependency]
 			local dependencyType = dependencyData.Type
 			local UniqueObjectName = ButtonData.Dependency .. "_Asset"
 
-			print("[DEBUG-WAIT] ⏳ Tombol " .. button.Name .. " sedang menunggu " .. UniqueObjectName .. " muncul...")
 			local categoryFolder = purchasedObjectsFolder:WaitForChild(dependencyType, math.huge)
 			local readyObject = categoryFolder:WaitForChild(UniqueObjectName, math.huge)
 
 			if readyObject then
-				print("[DEBUG-WAIT] ✅ Syarat terpenuhi! Membuka kunci:", button.Name)
 				button.Transparency = 0
 				button.CanCollide = true
 				if priceGui then
@@ -166,7 +166,6 @@ local function purchaseObject(button, plot)
 
 		if coins.Value >= ButtonData.Price then
 			isProcessing = true
-			print("Button processing transaction...")
 			coins.Value -= ButtonData.Price
 
 			local templateFolder = TycoonAssets:FindFirstChild(ButtonData.Type)
@@ -181,19 +180,15 @@ local function purchaseObject(button, plot)
 
 				if targetNode then
 					newObject:PivotTo(targetNode.CFrame)
-					print("[DEBUG-ASSET] 📍 " .. button.Name .. " ditempatkan sesuai Node Koordinat.")
 				else
 					newObject:PivotTo(button.CFrame)
-					warn("[DEBUG-ASSET] ⚠️ Node tidak ditemukan untuk ".. button.Name.. ", menggunakan posisi tombol.")
 				end
 				
 				newObject:SetAttribute("IsActive", true)
 				newObject.Parent = purchasedObjectsFolder:FindFirstChild(ButtonData.Type)
-				print("Object placed", newObject.Name)
 			end
 
 			button:Destroy()
-			print("Button destroyed")
 		end
 	end)
 end
@@ -282,6 +277,7 @@ end
 
 for _, button in ipairs(Buttons) do
 	local plot = button.Parent:FindFirstAncestorOfClass("Model")
+	setupButton(Buttons)
 	if plot then
 		purchaseObject(button, plot)
 	end
@@ -292,9 +288,6 @@ CollectionService:GetInstanceAddedSignal("Buttons"):Connect(function(newButton)
 	local plot = newButton.Parent:FindFirstAncestorOfClass("Model")
 	if plot then
 		purchaseObject(newButton, plot)
-		print("[DEBUG-SETUP] 📡 Radar menangkap tombol baru: " .. newButton.Name .. " di " .. plot.Name)
-	else
-		warn("[DEBUG-SETUP] ⚠️ Tombol baru " .. newButton.Name .. " tidak berada di dalam Plot!")
 	end
 end)
 
