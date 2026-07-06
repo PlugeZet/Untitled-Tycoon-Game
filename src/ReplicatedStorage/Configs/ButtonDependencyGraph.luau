@@ -1,6 +1,6 @@
 local ButtonConfig = {
     -- ==========================================
-    -- 🏭 DROPPERS (ID: 100 - 199)
+    -- DROPPERS (ID: 100 - 199)
     -- ==========================================
     ["BtnDropper1"] = {
         Id = 101,
@@ -52,7 +52,7 @@ local ButtonConfig = {
     },
     
     -- ==========================================
-    -- 📈 UPGRADERS (ID: 200 - 299)
+    -- UPGRADERS (ID: 200 - 299)
     -- ==========================================
     ["BtnUpgrader1"] = {
         Id = 201,
@@ -72,14 +72,14 @@ local ButtonConfig = {
     },
     
     -- ==========================================
-    -- 🧱 BUILDINGS & COSMETICS (ID: 300 - 399)
+    -- BUILDINGS & COSMETICS (ID: 300 - 399)
     -- ==========================================
     ["BtnWall1"] = {
         Id = 301,
         Name = "Wall",
         Target = "Wall1",
         Type = "Building",
-        Price = 50,
+        Price = 100,
         Dependency = "BtnDropper1"
     },
     ["BtnWall2"] = {
@@ -130,13 +130,54 @@ local ButtonConfig = {
         Price = 1000,
         Dependency = "BtnDropper3"
     },
-    ["BtnOwnerDoor"] = {
+    ["BtnPath1"] = {
         Id = 308,
+        Name = "Path",
+        Target = "Path1",
+        Type = "Building",
+        Price = 500,
+        Dependency = "BtnWall1"
+    },
+    ["BtnOwnerDoor"] = {
+        Id = 309,
         Name = "Owner Door",
         Target = "OwnerDoor",
         Type = "Building",
         Price = 1500,
         Dependency = "BtnWall3"
+    },
+
+["BtnWeapon1"] = {
+        Id = 401,
+        Name = "Wooden Sword",
+        Target = "Weapon1",
+        Type = "Building",
+        Price = 1500,
+        Dependency = "BtnWall1"
+    },
+    ["BtnWeapon2"] = {
+        Id = 402,
+        Name = "Iron Sword",
+        Target = "Weapon2",
+        Type = "Building",
+        Price = 4500,
+        Dependency = "BtnWeapon1"
+    },
+    ["BtnWeapon3"] = {
+        Id = 403,
+        Name = "Katana",
+        Target = "Weapon3",
+        Type = "Building",
+        Price = 12000,
+        Dependency = "BtnWeapon2"
+    },
+    ["BtnWeapon4"] = {
+        Id = 404,
+        Name = "Energy Sword",
+        Target = "Weapon4",
+        Type = "Building",
+        Price = 30000,
+        Dependency = "BtnWeapon3"
     },
 }
 

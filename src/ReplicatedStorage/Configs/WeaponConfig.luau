@@ -1,4 +1,4 @@
-local GunConfig = {
+local WeaponConfig = {
 	["Pistol"] = {
 		Name = "Pistol",
 		WeaponType = "Semi Automatic",
@@ -15,4 +15,4 @@ local GunConfig = {
 	},
 }
 
-return GunConfig
+return WeaponConfig

@@ -42,7 +42,7 @@ local function spawnItem(dropper)
 			clonedItem.Parent = workspace:WaitForChild("DropHandler")
 			Debris:AddItem(clonedItem, 20)
 		end
-		task.wait(2)
+		task.wait(5)
 	end
 end
 
