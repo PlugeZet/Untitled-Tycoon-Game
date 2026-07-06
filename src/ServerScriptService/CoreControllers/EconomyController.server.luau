@@ -3,6 +3,7 @@
 -- =================================
 
 local CollectionService = game:GetService("CollectionService")
+local SoundService = game:GetService("SoundService")
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
@@ -101,10 +102,10 @@ local function setupUpgrader(upgrader)
 end
 
 local function setupCollector(collector)
+	local coinSounds = collector:WaitForChild("DropSounds")
 	local collectPart = collector:WaitForChild("CollectPart", 5)
-	if not collectPart then
-		return
-	end
+	if not collectPart then return end
+
 	collectPart.Touched:Connect(function(otherPart)
 		local ownerId = otherPart:GetAttribute("OwnerId")
 		local price = otherPart:GetAttribute("Price")
@@ -116,6 +117,8 @@ local function setupCollector(collector)
 				if leaderstats then
 					local coins = leaderstats:FindFirstChild("Coins")
 					if coins then
+						local randomSound = coinSounds:GetChildren()[math.random(1, #coinSounds:GetChildren())]
+						randomSound:Play()
 						coins.Value += price
 					end
 				end

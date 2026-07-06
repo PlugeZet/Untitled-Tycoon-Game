@@ -149,7 +149,7 @@ local ButtonConfig = {
 
 ["BtnWeapon1"] = {
         Id = 401,
-        Name = "Wooden Sword",
+        Name = "Sword",
         Target = "Weapon1",
         Type = "Building",
         Price = 1500,
@@ -157,7 +157,7 @@ local ButtonConfig = {
     },
     ["BtnWeapon2"] = {
         Id = 402,
-        Name = "Iron Sword",
+        Name = "Shotgun",
         Target = "Weapon2",
         Type = "Building",
         Price = 4500,
@@ -165,7 +165,7 @@ local ButtonConfig = {
     },
     ["BtnWeapon3"] = {
         Id = 403,
-        Name = "Katana",
+        Name = "Bazzoka",
         Target = "Weapon3",
         Type = "Building",
         Price = 12000,
@@ -173,7 +173,7 @@ local ButtonConfig = {
     },
     ["BtnWeapon4"] = {
         Id = 404,
-        Name = "Energy Sword",
+        Name = "Laser Gun",
         Target = "Weapon4",
         Type = "Building",
         Price = 30000,

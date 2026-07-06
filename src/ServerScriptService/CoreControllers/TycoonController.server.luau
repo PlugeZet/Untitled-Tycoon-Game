@@ -1,4 +1,5 @@
 local CollectionService = game:GetService("CollectionService")
+local SoundService = game:GetService("SoundService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
@@ -49,6 +50,10 @@ local function claimPlot(plot)
 
             plot:SetAttribute("IsClaimed", true)
             player:SetAttribute("HasPlot", true)
+
+            local coinSounds = SoundService:WaitForChild("PurchaseSounds")
+			local randomSound = coinSounds:GetChildren()[math.random(1, #coinSounds:GetChildren())]
+		    randomSound:Play()
 
             print("[CLAIM] Successfully registered claim for " .. player.Name)
             claimDoor:Destroy()
@@ -266,6 +271,10 @@ local function purchaseObject(button, plot)
                 
                 newObject:SetAttribute("IsActive", true)
                 newObject.Parent = purchasedObjectsFolder:FindFirstChild(ButtonData.Type)
+
+                local coinSounds = SoundService:WaitForChild("PurchaseSounds")
+				local randomSound = coinSounds:GetChildren()[math.random(1, #coinSounds:GetChildren())]
+				randomSound:Play()
                 print("[DEPLOYMENT] Successfully spawned and parented: " .. newObject.Name)
             else
                 warn("[WARN] Critical failure. Target source item missing inside TycoonAssets location: " .. tostring(ButtonData.Target))
