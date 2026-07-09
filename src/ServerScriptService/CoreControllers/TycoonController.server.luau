@@ -7,6 +7,9 @@ local Players = game:GetService("Players")
 local Configs = ReplicatedStorage:WaitForChild("Configs")
 local ButtonConfig = require(Configs:WaitForChild("ButtonDependencyGraph"))
 
+local Events = ReplicatedStorage:WaitForChild("Events")
+local BindableEvents = Events:WaitForChild("BindableEvents")
+
 local Plots = CollectionService:GetTagged("Plots")
 local Buttons = CollectionService:GetTagged("Buttons")
 
@@ -14,7 +17,6 @@ local StarterPlotTemplate = ServerStorage:WaitForChild("StarterPlot", 5)
 local TycoonAssets = ServerStorage:WaitForChild("TycoonAssets", 5)
 
 local function claimPlot(plot)
-    print("[INIT] Setting up claim logic for plot: " .. tostring(plot.Name))
     local claimDoor = plot:WaitForChild("ClaimDoor", 5)
 
     if not claimDoor then 
@@ -38,7 +40,6 @@ local function claimPlot(plot)
         if isClaimed then return end
         
         if ownerId == nil or ownerId == 0 then
-            print("[CLAIM] Player " .. player.Name .. " is attempting to claim " .. plot.Name)
             plot:SetAttribute("OwnerId", playerId)
             plot:SetAttribute("OwnerName", player.Name)
             
@@ -55,7 +56,6 @@ local function claimPlot(plot)
 			local randomSound = coinSounds:GetChildren()[math.random(1, #coinSounds:GetChildren())]
 		    randomSound:Play()
 
-            print("[CLAIM] Successfully registered claim for " .. player.Name)
             claimDoor:Destroy()
         end
     end)
@@ -73,7 +73,6 @@ local function applyPlotColor(model, color)
 			if part.Material ~= Enum.Material.Neon then
 				if part.Material == Enum.Material.Plastic then
 					part.Color = color
-					
 				end
 			end
 		end
@@ -83,13 +82,11 @@ end
 local function initializePlot(plot)
     plot:GetAttributeChangedSignal("IsClaimed"):Connect(function()
         local isClaimed = plot:GetAttribute("IsClaimed")
-        print("[PLOT-INIT] IsClaimed changed to " .. tostring(isClaimed) .. " for " .. plot.Name)
         if not isClaimed then return end
 
-        print("[PLOT-INIT] Spawning master clone for " .. plot.Name)
         local masterClone = StarterPlotTemplate:Clone()
-
         local plotColor = plot:GetAttribute("PlotColor")
+
         if plotColor then
             applyPlotColor(masterClone, plotColor)
         end
@@ -102,7 +99,6 @@ local function initializePlot(plot)
 
         local buttonFolder = masterClone:FindFirstChild("Buttons")
         if buttonFolder then
-            print("[PLOT-INIT] Initializing button visibilities inside template")
             for _, button in ipairs(buttonFolder:GetChildren()) do
                 if button.Name ~= "BtnDropper1" then
                     button.Transparency = 1
@@ -112,7 +108,6 @@ local function initializePlot(plot)
             end
         end
 
-        print("[PLOT-INIT] Distributing assets from master template to destinations")
         for _, clonedChild in ipairs(masterClone:GetChildren()) do
             local targetFolder = clonedChild:GetAttribute("Destination")
             
@@ -137,7 +132,6 @@ local function initializePlot(plot)
             end
         end
         masterClone:Destroy()
-        print("[PLOT-INIT] Master template distribution completed for " .. plot.Name)
     end)
 end
 
@@ -163,13 +157,11 @@ end
 
 local function purchaseObject(button, plot)
     if not plot:IsDescendantOf(workspace) then 
-        print("[PURCHASE] Blocked instantiation. Button " .. button.Name .. " is not inside workspace hierarchy.")
         return 
     end
     local ButtonData = ButtonConfig[button.Name]
 
     if not ButtonData then 
-        print("[PURCHASE] Aborted. No matching data entry for button: " .. tostring(button.Name))
         return 
     end
 
@@ -177,7 +169,6 @@ local function purchaseObject(button, plot)
     local isProcessing = false
     
     if ButtonData.Dependency ~= nil then
-        print("[DEPENDENCY] Hiding " .. button.Name .. " until requirement is met: " .. tostring(ButtonData.Dependency))
         button.Transparency = 1
         button.CanCollide = false
         local priceGui = button:FindFirstChild("ButtonPrice")
@@ -193,7 +184,6 @@ local function purchaseObject(button, plot)
             local readyObject = categoryFolder:WaitForChild(UniqueObjectName, math.huge)
 
             if readyObject then
-                print("[DEPENDENCY] Conditions verified. Unlocking button: " .. button.Name)
                 button.Transparency = 0
                 button.CanCollide = true
                 if priceGui then
@@ -235,7 +225,6 @@ local function purchaseObject(button, plot)
 
         local leaderstats = player:FindFirstChild("leaderstats")
         if not leaderstats then 
-            print("[WARN] Verification failed. Player leaderstats folder missing.")
             return 
         end
         
@@ -243,7 +232,6 @@ local function purchaseObject(button, plot)
 
         if coins.Value >= ButtonData.Price then
             isProcessing = true
-            print("[TRANSACTION] Processing purchase. Player: " .. player.Name .. " | Button: " .. button.Name .. " | Cost: " .. tostring(ButtonData.Price))
             coins.Value -= ButtonData.Price
 
             local templateFolder = TycoonAssets:FindFirstChild(ButtonData.Type)
@@ -263,21 +251,21 @@ local function purchaseObject(button, plot)
 
                 if targetNode then
                     newObject:PivotTo(targetNode.CFrame)
-                    print("[DEPLOYMENT] Object " .. newObject.Name .. " snapped to targeted Node placement structure.")
                 else
                     newObject:PivotTo(button.CFrame)
-                    print("[DEPLOYMENT] Node not found. Defaulting " .. newObject.Name .. " to button footprint position.")
                 end
                 
                 newObject:SetAttribute("IsActive", true)
                 newObject.Parent = purchasedObjectsFolder:FindFirstChild(ButtonData.Type)
 
+                local PurchaseEvent = BindableEvents:WaitForChild("PurchaseEvent")
+                if PurchaseEvent then
+                    PurchaseEvent:Fire(player, ButtonData)
+                end
+
                 local coinSounds = SoundService:WaitForChild("PurchaseSounds")
 				local randomSound = coinSounds:GetChildren()[math.random(1, #coinSounds:GetChildren())]
 				randomSound:Play()
-                print("[DEPLOYMENT] Successfully spawned and parented: " .. newObject.Name)
-            else
-                warn("[WARN] Critical failure. Target source item missing inside TycoonAssets location: " .. tostring(ButtonData.Target))
             end
 
             button:Destroy()
@@ -286,7 +274,6 @@ local function purchaseObject(button, plot)
 end
 
 local function setupLaserGate(gateModel)
-    print("[LASER-INIT] Initiating setup configuration routines for gate: " .. tostring(gateModel.Name))
     local toggleButtonPart = gateModel:WaitForChild("ToggleButton")
     local clickDetector = toggleButtonPart:WaitForChild("ClickDetector")
     
@@ -314,7 +301,6 @@ local function setupLaserGate(gateModel)
                     end
 
                     if plot and plot:GetAttribute("OwnerId") ~= player.UserId then 
-                        print("[LASER-KILL] Intruder eliminated: " .. player.Name .. " crossed gate on plot owned by User ID " .. tostring(plot:GetAttribute("OwnerId")))
                         humanoid.Health = 0
                     end
                 end
@@ -325,7 +311,6 @@ local function setupLaserGate(gateModel)
     local isDebounce = false
     
     clickDetector.MouseClick:Connect(function(playerClicker)
-        print("[LASER-INTERACT] Interaction click received from player: " .. playerClicker.Name)
         if isDebounce then return end
 
         local plot = gateModel
@@ -340,7 +325,6 @@ local function setupLaserGate(gateModel)
             local isActive = gateModel:GetAttribute("IsActive")
             local newState = not isActive
             gateModel:SetAttribute("IsActive", newState)
-            print("[LASER-TOGGLE] Authorization match verified. Power toggled to state value: " .. tostring(newState))
             
             for _, laser in ipairs(lasers) do
                 if newState == true then
@@ -358,122 +342,73 @@ local function setupLaserGate(gateModel)
             
             task.wait(1)
             isDebounce = false
-        else
-            print("[LASER-INTERACT] Denied. Player " .. playerClicker.Name .. " does not match system owner validation credentials.")
         end 
     end)
 end
 
 local function takeWeapon(weaponTube)
-    print("[WEAPON-INIT] Registering pickup mechanics for system capsule assembly: " .. tostring(weaponTube.Name))
     local plot = weaponTube
-    
-    print("[WEAPON-DEBUG] Memulai pelacakan root Plot (Tree Climbing)...")
     while plot and plot ~= workspace do
-        print("[WEAPON-DEBUG] Sedang memeriksa leluhur: " .. tostring(plot.Name))
         if plot:GetAttribute("OwnerId") ~= nil then 
-            print("[WEAPON-DEBUG] Ditemukan atribut OwnerId pada: " .. tostring(plot.Name))
             break 
         end
         plot = plot.Parent
     end
 
-    print("[WEAPON-DEBUG] Memvalidasi hasil pencarian Plot...")
     if not plot or plot == workspace then 
-        warn("[WARN] Aborting setup. Tree tracing could not resolve root plot object for tube source: " .. weaponTube.Name)
         return 
     end
-    print("[WEAPON-DEBUG] Plot validasi sukses. Plot name: " .. tostring(plot.Name))
-
-    print("[WEAPON-DEBUG] Mencari komponen GiverPart...")
     local giverButton = weaponTube:FindFirstChild("Giverpart") or weaponTube:FindFirstChild("GiverPart")
     if giverButton == nil then 
-        warn("[WARN] Setup halted. No physically interacting touch pad element detected inside model: " .. weaponTube.Name)
         return 
     end
-    print("[WEAPON-DEBUG] GiverPart ditemukan.")
 
-    local ownerId = plot:GetAttribute("OwnerId")
     local weaponName = weaponTube:GetAttribute("WeaponName")
-    print("[WEAPON-DEBUG] Data diekstraksi - Target Weapon: " .. tostring(weaponName) .. " | OwnerId: " .. tostring(ownerId))
-    
-    print("[WEAPON-DEBUG] Memeriksa ketersediaan template senjata di ReplicatedStorage...")
     local weaponTemplate = TycoonAssets:FindFirstChild("Weapons"):FindFirstChild(weaponName)
-    
-    if weaponTemplate then
-        print("[WEAPON-DEBUG] Template senjata (" .. tostring(weaponName) .. ") siap digunakan.")
-    else
-        warn("[WEAPON-DEBUG] Peringatan: Template senjata tidak ditemukan di awal setup!")
-    end
-
     local playerCooldowns = {}
     
     giverButton.Touched:Connect(function(otherPart)
-        print("[WEAPON-TOUCH] Sensor disentuh oleh part: " .. tostring(otherPart.Name))
         
         local character = otherPart.Parent
         local humanoid = character:FindFirstChild("Humanoid")
         local player = Players:GetPlayerFromCharacter(character)
 
-        print("[WEAPON-TOUCH] Memvalidasi apakah entitas adalah karakter pemain yang hidup...")
         if not player or not humanoid or humanoid.Health <= 0 then 
-            print("[WEAPON-TOUCH] Ditolak: Entitas bukan pemain, atau sudah mati.")
             return 
         end
-        print("[WEAPON-TOUCH] Entitas valid: " .. player.Name)
         
-        print("[WEAPON-TOUCH] Memeriksa otoritas kepemilikan plot...")
-        if player.UserId ~= ownerId then 
-            print("[WEAPON-TOUCH] Ditolak: " .. player.Name .. " (ID: " .. player.UserId .. ") bukan pemilik plot (Owner ID: " .. tostring(ownerId) .. ")")
-            return 
-        end
-        print("[WEAPON-TOUCH] Otoritas kepemilikan cocok.")
-        
-        print("[WEAPON-TOUCH] Memeriksa status cooldown pemain...")
         if playerCooldowns[player.UserId] then 
-            print("[WEAPON-TOUCH] Ditolak: " .. player.Name .. " masih dalam masa cooldown.")
             return 
         end
-        print("[WEAPON-TOUCH] Pemain bebas dari cooldown.")
         
         local backpack = player:FindFirstChild("Backpack")
         local hasInHand = character:FindFirstChild(weaponName)
         local hasInBackpack = backpack and backpack:FindFirstChild(weaponName)
-        
-        print("[WEAPON-TOUCH] Memeriksa isi inventory (Backpack & Tangan) untuk senjata: " .. tostring(weaponName))
+
         if not hasInHand and not hasInBackpack then
-            print("[WEAPON-TOUCH] Inventory aman. Pemain belum memiliki senjata ini.")
             
             if weaponTemplate then
-                print("[WEAPON-TOUCH] Memulai proses kloning item...")
                 playerCooldowns[player.UserId] = true
                 
                 local newWeapon = weaponTemplate:Clone()
                 newWeapon.Parent = backpack
-                print("[WEAPON-GIVER] Distributed item " .. weaponName .. " into character inventory for: " .. player.Name)
-                
-                print("[WEAPON-DEBUG] Menerapkan jeda cooldown 2 detik untuk " .. player.Name)
+            
                 task.wait(2)
                 
                 playerCooldowns[player.UserId] = nil 
-                print("[WEAPON-DEBUG] Cooldown selesai dilepas untuk " .. player.Name)
             else
-                warn("[WARN] Execution stopped. Item template asset name reference lookup resulted in nil for string target: " .. tostring(weaponName))
+                
             end
         else
-            print("[WEAPON-TOUCH] Ditolak: " .. player.Name .. " sudah memegang atau menyimpan senjata ini di dalam tasnya.")
         end
     end)
 end
-
-print("[STARTUP] Global environment maps parsing operations initialized")
 
 for _, plot in ipairs(Plots) do
     claimPlot(plot)
     initializePlot(plot)
 end
 
-print("[STARTUP] Iterating structural tags for default runtime configuration instances")
 setupButton(Buttons)
 
 for _, button in ipairs(Buttons) do
@@ -484,7 +419,6 @@ for _, button in ipairs(Buttons) do
 end
 
 CollectionService:GetInstanceAddedSignal("Buttons"):Connect(function(newButton)
-    print("[DYNAMIC-LOAD] Dynamic setup call routed to freshly added instance instance: " .. newButton.Name)
     task.wait(0.1)
     setupButton({newButton})
     local plot = newButton.Parent:FindFirstAncestorOfClass("Model")
@@ -500,18 +434,14 @@ for _, gate in ipairs(CollectionService:GetTagged("OwnerDoors")) do
 end
 
 CollectionService:GetInstanceAddedSignal("OwnerDoors"):Connect(function(newGate)
-    print("[DYNAMIC-LOAD] Setup pipeline hook routed to newly replicated laser system: " .. newGate.Name)
     task.spawn(function()
         setupLaserGate(newGate)
     end)
 end)
 
 CollectionService:GetInstanceAddedSignal("Weapons"):Connect(function(newWeapon)
-    print("[DYNAMIC-LOAD] Setup pipeline hook routed to newly replicated equipment supply assembly: " .. newWeapon.Name)
     
     task.defer(function()
         takeWeapon(newWeapon)
     end)
 end)
-
-print("[STARTUP] Master framework event maps connection bindings binding pipelines fully complete")

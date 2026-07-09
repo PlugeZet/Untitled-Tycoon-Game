@@ -102,7 +102,7 @@ local function setupUpgrader(upgrader)
 end
 
 local function setupCollector(collector)
-	local coinSounds = collector:WaitForChild("DropSounds")
+	local coinSounds = SoundService:WaitForChild("DropSounds", 5)
 	local collectPart = collector:WaitForChild("CollectPart", 5)
 	if not collectPart then return end
 
@@ -117,8 +117,18 @@ local function setupCollector(collector)
 				if leaderstats then
 					local coins = leaderstats:FindFirstChild("Coins")
 					if coins then
-						local randomSound = coinSounds:GetChildren()[math.random(1, #coinSounds:GetChildren())]
-						randomSound:Play()
+						local soundList = coinSounds:GetChildren()
+						if #soundList > 0 then
+							local randomSound = soundList[math.random(1, #soundList)]
+							local spatialSound = randomSound:Clone()
+							spatialSound.Parent = collectPart
+							spatialSound.RollOffMaxDistance = 50 
+							spatialSound.RollOffMinDistance = 10
+				
+							spatialSound:Play()
+							Debris:AddItem(spatialSound, spatialSound.TimeLength + 0.1)
+						end
+						
 						coins.Value += price
 					end
 				end
