@@ -7,7 +7,7 @@ local Players = game:GetService("Players")
 local Configs = ReplicatedStorage:WaitForChild("Configs")
 local ButtonConfig = require(Configs:WaitForChild("ButtonDependencyGraph"))
 
-local Bindable = ReplicatedStorage:WaitForChild("Bindable")
+local Bindable = ServerStorage:WaitForChild("Bindable")
 local BindEvents = Bindable:WaitForChild("Event")
 local BindFunctions = Bindable:WaitForChild("Function")
 
@@ -18,62 +18,74 @@ local StarterPlotTemplate = ServerStorage:WaitForChild("StarterPlot", 5)
 local TycoonAssets = ServerStorage:WaitForChild("TycoonAssets", 5)
 
 local function claimPlot(plot)
-    local claimDoor = plot:WaitForChild("ClaimDoor", 5)
+	local claimDoor = plot:WaitForChild("ClaimDoor", 5)
 
-    if not claimDoor then 
-        warn("[WARN] ClaimDoor not found for plot: " .. tostring(plot.Name))
-        return 
-    end
+	if not claimDoor then
+		warn("[WARN] ClaimDoor not found for plot: " .. tostring(plot.Name))
+		return
+	end
 
-    claimDoor.Touched:Connect(function(otherPart)
-        local character = otherPart.Parent
-        local humanoid = character:FindFirstChild("Humanoid")
+	claimDoor.Touched:Connect(function(otherPart)
+		local character = otherPart.Parent
+		local humanoid = character:FindFirstChild("Humanoid")
 
-        if not humanoid then return end
+		if not humanoid then
+			return
+		end
 
-        local player = game.Players:GetPlayerFromCharacter(character)
-        if not player then return end
+		local player = game.Players:GetPlayerFromCharacter(character)
+		if not player then
+			return
+		end
 
-        local playerId = player.UserId
-        local ownerId = plot:GetAttribute("OwnerId")
-        local isClaimed = plot:GetAttribute("IsClaimed")
-        
-        if isClaimed then return end
-        
-        if ownerId == nil or ownerId == 0 then
-            plot:SetAttribute("OwnerId", playerId)
-            plot:SetAttribute("OwnerName", player.Name)
-            
-            local plotBillboard = plot:FindFirstChild("PlotBillboard")
-            if plotBillboard then
-                plotBillboard.PlotLabel.Text = player.Name .. "'s Plot"
-                plotBillboard.Enabled = true
-            end
+		local playerId = player.UserId
+		local ownerId = plot:GetAttribute("OwnerId")
+		local isClaimed = plot:GetAttribute("IsClaimed")
 
-            plot:SetAttribute("IsClaimed", true)
-            player:SetAttribute("HasPlot", true)
+		if isClaimed then
+			return
+		end
 
-            local coinSounds = SoundService:WaitForChild("PurchaseSounds")
+		if ownerId == nil or ownerId == 0 then
+			plot:SetAttribute("OwnerId", playerId)
+			plot:SetAttribute("OwnerName", player.Name)
+
+			local plotBillboard = plot:FindFirstChild("PlotBillboard")
+			if plotBillboard then
+				plotBillboard.PlotLabel.Text = player.Name .. "'s Plot"
+				plotBillboard.Enabled = true
+			end
+
+			plot:SetAttribute("IsClaimed", true)
+			player:SetAttribute("HasPlot", true)
+
+			local coinSounds = SoundService:WaitForChild("PurchaseSounds")
 			local randomSound = coinSounds:GetChildren()[math.random(1, #coinSounds:GetChildren())]
-		    randomSound:Play()
+			randomSound:Play()
 
-            claimDoor:Destroy()
+			claimDoor:Destroy()
 
-            local GetAllPurchase = BindFunctions:WaitForChild("GetAllPurchase")
-            if GetAllPurchase then 
-                local oldPurchaseData = GetAllPurchase:Invoke(player)
-                if oldPurchaseData then
-                    
-                end
-            end
+			local GetAllPurchase = BindFunctions:WaitForChild("GetAllPurchase")
+			if GetAllPurchase then
+				local oldPurchaseData = GetAllPurchase:Invoke(player)
 
-        end
-    end)
+				if not oldPurchaseData then
+					print("Data tidak ada")
+					return
+				end
+				for _, object in ipairs(oldPurchaseData) do
+					print(object)
+				end
+			end
+		end
+	end)
 end
 
 local function applyPlotColor(model, color)
-    local canApplyColor = model:GetAttribute("CanApplyColor")
-    if canApplyColor == nil then return end
+	local canApplyColor = model:GetAttribute("CanApplyColor")
+	if canApplyColor == nil then
+		return
+	end
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") then
 			if part:IsA("UnionOperation") then
@@ -90,368 +102,392 @@ local function applyPlotColor(model, color)
 end
 
 local function initializePlot(plot)
-    plot:GetAttributeChangedSignal("IsClaimed"):Connect(function()
-        local isClaimed = plot:GetAttribute("IsClaimed")
-        if not isClaimed then return end
+	plot:GetAttributeChangedSignal("IsClaimed"):Connect(function()
+		local isClaimed = plot:GetAttribute("IsClaimed")
+		if not isClaimed then
+			return
+		end
 
-        local masterClone = StarterPlotTemplate:Clone()
-        local plotColor = plot:GetAttribute("PlotColor")
+		local masterClone = StarterPlotTemplate:Clone()
+		local plotColor = plot:GetAttribute("PlotColor")
 
-        if plotColor then
-            applyPlotColor(masterClone, plotColor)
-        end
+		if plotColor then
+			applyPlotColor(masterClone, plotColor)
+		end
 
-        if plot.PrimaryPart and masterClone.PrimaryPart then
-            masterClone:PivotTo(plot.PrimaryPart.CFrame)
-        else
-            warn("[WARN] Missing PrimaryPart on plot or template for " .. plot.Name)
-        end
+		if plot.PrimaryPart and masterClone.PrimaryPart then
+			masterClone:PivotTo(plot.PrimaryPart.CFrame)
+		else
+			warn("[WARN] Missing PrimaryPart on plot or template for " .. plot.Name)
+		end
 
-        local buttonFolder = masterClone:FindFirstChild("Buttons")
-        if buttonFolder then
-            for _, button in ipairs(buttonFolder:GetChildren()) do
-                if button.Name ~= "BtnDropper1" then
-                    button.Transparency = 1
-                    button.CanCollide = false
-                    button.ButtonPrice.Enabled = false
-                end
-            end
-        end
+		local buttonFolder = masterClone:FindFirstChild("Buttons")
+		if buttonFolder then
+			for _, button in ipairs(buttonFolder:GetChildren()) do
+				if button.Name ~= "BtnDropper1" then
+					button.Transparency = 1
+					button.CanCollide = false
+					button.ButtonPrice.Enabled = false
+				end
+			end
+		end
 
-        for _, clonedChild in ipairs(masterClone:GetChildren()) do
-            local targetFolder = clonedChild:GetAttribute("Destination")
-            
-            if targetFolder == "Plot" or targetFolder == "plot" then
-                clonedChild.Parent = plot
-            elseif targetFolder ~= nil then
-                local destination = plot:FindFirstChild(targetFolder)
-                if destination then
-                    clonedChild.Parent = destination
-                else
-                    warn("[WARN] Target folder destination '" .. tostring(targetFolder) .. "' not found in plot. Destroying asset: " .. clonedChild.Name)
-                    clonedChild:Destroy()
-                end
-            else
-                local defaultFolder = plot:FindFirstChild("PurchasedObjects")
-                if defaultFolder then
-                    clonedChild.Parent = defaultFolder
-                else
-                    warn("[WARN] PurchasedObjects fallback folder not found. Destroying asset: " .. clonedChild.Name)
-                    clonedChild:Destroy()
-                end
-            end
-        end
-        masterClone:Destroy()
-    end)
+		for _, clonedChild in ipairs(masterClone:GetChildren()) do
+			local targetFolder = clonedChild:GetAttribute("Destination")
+
+			if targetFolder == "Plot" or targetFolder == "plot" then
+				clonedChild.Parent = plot
+			elseif targetFolder ~= nil then
+				local destination = plot:FindFirstChild(targetFolder)
+				if destination then
+					clonedChild.Parent = destination
+				else
+					warn(
+						"[WARN] Target folder destination '"
+							.. tostring(targetFolder)
+							.. "' not found in plot. Destroying asset: "
+							.. clonedChild.Name
+					)
+					clonedChild:Destroy()
+				end
+			else
+				local defaultFolder = plot:FindFirstChild("PurchasedObjects")
+				if defaultFolder then
+					clonedChild.Parent = defaultFolder
+				else
+					warn("[WARN] PurchasedObjects fallback folder not found. Destroying asset: " .. clonedChild.Name)
+					clonedChild:Destroy()
+				end
+			end
+		end
+		masterClone:Destroy()
+	end)
 end
 
-
 local function setupButton(buttons)
-    for _, button in ipairs(buttons) do
-        local buttonData = ButtonConfig[button.Name]
-        if buttonData == nil then 
-            print("[WARN] Configuration data missing for button name: " .. tostring(button.Name))
-            return 
-        end
-        local priceTag = button:FindFirstChild("ButtonPrice"):FindFirstChild("ButtonFrame")
-        local buttonLabel = priceTag:FindFirstChild("ButtonLabel")
-        local priceLabel = priceTag:FindFirstChild("ButtonPriceLabel")
-        if priceLabel ~= nil and buttonLabel ~= nil then
-            buttonLabel.Text = buttonData.Name
-            priceLabel.Text = "$" .. buttonData.Price
-        else
-            print("[WARN] Visual text elements missing inside ButtonPrice for: " .. button.Name)
-        end
-    end
+	for _, button in ipairs(buttons) do
+		local buttonData = ButtonConfig[button.Name]
+		if buttonData == nil then
+			print("[WARN] Configuration data missing for button name: " .. tostring(button.Name))
+			return
+		end
+		local priceTag = button:FindFirstChild("ButtonPrice"):FindFirstChild("ButtonFrame")
+		local buttonLabel = priceTag:FindFirstChild("ButtonLabel")
+		local priceLabel = priceTag:FindFirstChild("ButtonPriceLabel")
+		if priceLabel ~= nil and buttonLabel ~= nil then
+			buttonLabel.Text = buttonData.Name
+			priceLabel.Text = "$" .. buttonData.Price
+		else
+			print("[WARN] Visual text elements missing inside ButtonPrice for: " .. button.Name)
+		end
+	end
 end
 
 local function purchaseObject(button, plot)
-    if not plot:IsDescendantOf(workspace) then 
-        return 
-    end
-    local ButtonData = ButtonConfig[button.Name]
+	if not plot:IsDescendantOf(workspace) then
+		return
+	end
+	local ButtonData = ButtonConfig[button.Name]
 
-    if not ButtonData then 
-        return 
-    end
+	if not ButtonData then
+		return
+	end
 
-    local purchasedObjectsFolder = plot:FindFirstChild("PurchasedObjects")
-    local isProcessing = false
-    
-    if ButtonData.Dependency ~= nil then
-        button.Transparency = 1
-        button.CanCollide = false
-        local priceGui = button:FindFirstChild("ButtonPrice")
+	local purchasedObjectsFolder = plot:FindFirstChild("PurchasedObjects")
+	local isProcessing = false
 
-        if priceGui then priceGui.Enabled = false end
+	if ButtonData.Dependency ~= nil then
+		button.Transparency = 1
+		button.CanCollide = false
+		local priceGui = button:FindFirstChild("ButtonPrice")
 
-        task.spawn(function()
-            local dependencyData = ButtonConfig[ButtonData.Dependency]
-            local dependencyType = dependencyData.Type
-            local UniqueObjectName = ButtonData.Dependency .. "_Asset"
+		if priceGui then
+			priceGui.Enabled = false
+		end
 
-            local categoryFolder = purchasedObjectsFolder:WaitForChild(dependencyType, math.huge)
-            local readyObject = categoryFolder:WaitForChild(UniqueObjectName, math.huge)
+		task.spawn(function()
+			local dependencyData = ButtonConfig[ButtonData.Dependency]
+			local dependencyType = dependencyData.Type
+			local UniqueObjectName = ButtonData.Dependency .. "_Asset"
 
-            if readyObject then
-                button.Transparency = 0
-                button.CanCollide = true
-                if priceGui then
-                    priceGui.Enabled = true
-                end
-            end
-        end)
-    end
-    
-    local ownerId = plot:GetAttribute("OwnerId")
-    local player = Players:GetPlayerByUserId(ownerId)
-    local leaderstats = player:FindFirstChild("leaderstats")
-    local coins = leaderstats and leaderstats:FindFirstChild("Coins")
-    if coins then
-        if coins.Value >= ButtonData.Price then
-            button.BrickColor = BrickColor.new("Lime green")
-        else
-            button.BrickColor = BrickColor.new("Really red")
-        end
+			local categoryFolder = purchasedObjectsFolder:WaitForChild(dependencyType, math.huge)
+			local readyObject = categoryFolder:WaitForChild(UniqueObjectName, math.huge)
 
-        coins.Changed:Connect(function(newValue)
-            if newValue >= ButtonData.Price then
-                button.BrickColor = BrickColor.new("Lime green")
-            else
-                button.BrickColor = BrickColor.new("Really red")
-            end
-        end)
-    end
-    
-    button.Touched:Connect(function(otherPart)
-        if isProcessing then return end
-        if button.CanCollide == false then return end
-        
-        local character = otherPart.Parent
-        local player = Players:GetPlayerFromCharacter(character)
+			if readyObject then
+				button.Transparency = 0
+				button.CanCollide = true
+				if priceGui then
+					priceGui.Enabled = true
+				end
+			end
+		end)
+	end
 
-        if not player then return end
-        if plot:GetAttribute("OwnerId") ~= player.UserId then return end
+	local ownerId = plot:GetAttribute("OwnerId")
+	local player = Players:GetPlayerByUserId(ownerId)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	local coins = leaderstats and leaderstats:FindFirstChild("Coins")
+	if coins then
+		if coins.Value >= ButtonData.Price then
+			button.BrickColor = BrickColor.new("Lime green")
+		else
+			button.BrickColor = BrickColor.new("Really red")
+		end
 
-        local leaderstats = player:FindFirstChild("leaderstats")
-        if not leaderstats then 
-            return 
-        end
-        
-        local coins = leaderstats:FindFirstChild("Coins")
+		coins.Changed:Connect(function(newValue)
+			if newValue >= ButtonData.Price then
+				button.BrickColor = BrickColor.new("Lime green")
+			else
+				button.BrickColor = BrickColor.new("Really red")
+			end
+		end)
+	end
 
-        if coins.Value >= ButtonData.Price then
-            isProcessing = true
-            coins.Value -= ButtonData.Price
+	button.Touched:Connect(function(otherPart)
+		if isProcessing then
+			return
+		end
+		if button.CanCollide == false then
+			return
+		end
 
-            local templateFolder = TycoonAssets:FindFirstChild(ButtonData.Type)
-            local templateItem = templateFolder and templateFolder:FindFirstChild(ButtonData.Target)
+		local character = otherPart.Parent
+		local player = Players:GetPlayerFromCharacter(character)
 
-            if templateItem then
-                local newObject = templateItem:Clone()
-                newObject.Name = button.Name .. "_Asset"
+		if not player then
+			return
+		end
+		if plot:GetAttribute("OwnerId") ~= player.UserId then
+			return
+		end
 
-                local plotColor = plot:GetAttribute("PlotColor")
-                if plotColor then
-                    applyPlotColor(newObject, plotColor)
-                end
+		local leaderstats = player:FindFirstChild("leaderstats")
+		if not leaderstats then
+			return
+		end
 
-                local PlacementNodesFolder = plot:FindFirstChild("PlacementNodes")
-                local targetNode = PlacementNodesFolder and PlacementNodesFolder:FindFirstChild("Node_" .. button.Name)
+		local coins = leaderstats:FindFirstChild("Coins")
 
-                if targetNode then
-                    newObject:PivotTo(targetNode.CFrame)
-                else
-                    newObject:PivotTo(button.CFrame)
-                end
-                
-                newObject:SetAttribute("IsActive", true)
-                newObject.Parent = purchasedObjectsFolder:FindFirstChild(ButtonData.Type)
+		if coins.Value >= ButtonData.Price then
+			isProcessing = true
+			coins.Value -= ButtonData.Price
 
-                local PurchaseEvent = BindEvents:WaitForChild("PurchaseEvent")
-                if PurchaseEvent then
-                    PurchaseEvent:Fire(player, button.Name)
-                end
+			local templateFolder = TycoonAssets:FindFirstChild(ButtonData.Type)
+			local templateItem = templateFolder and templateFolder:FindFirstChild(ButtonData.Target)
 
-                local coinSounds = SoundService:WaitForChild("PurchaseSounds")
+			if templateItem then
+				local newObject = templateItem:Clone()
+				newObject.Name = button.Name .. "_Asset"
+
+				local plotColor = plot:GetAttribute("PlotColor")
+				if plotColor then
+					applyPlotColor(newObject, plotColor)
+				end
+
+				local PlacementNodesFolder = plot:FindFirstChild("PlacementNodes")
+				local targetNode = PlacementNodesFolder and PlacementNodesFolder:FindFirstChild("Node_" .. button.Name)
+
+				if targetNode then
+					newObject:PivotTo(targetNode.CFrame)
+				else
+					newObject:PivotTo(button.CFrame)
+				end
+
+				newObject:SetAttribute("IsActive", true)
+				newObject.Parent = purchasedObjectsFolder:FindFirstChild(ButtonData.Type)
+
+				local PurchaseEvent = BindEvents:WaitForChild("PurchaseEvent")
+				if PurchaseEvent then
+					PurchaseEvent:Fire(player, button.Name)
+				end
+
+				local coinSounds = SoundService:WaitForChild("PurchaseSounds")
 				local randomSound = coinSounds:GetChildren()[math.random(1, #coinSounds:GetChildren())]
 				randomSound:Play()
-            end
+			end
 
-            button:Destroy()
-        end
-    end)
+			button:Destroy()
+		end
+	end)
 end
 
 local function setupLaserGate(gateModel)
-    local toggleButtonPart = gateModel:WaitForChild("ToggleButton")
-    local clickDetector = toggleButtonPart:WaitForChild("ClickDetector")
-    
-    gateModel:SetAttribute("IsActive", false)
-    local lasers = {}
+	local toggleButtonPart = gateModel:WaitForChild("ToggleButton")
+	local clickDetector = toggleButtonPart:WaitForChild("ClickDetector")
 
-    for _, laser in ipairs(gateModel:GetChildren()) do
-        if laser:IsA("BasePart") and laser.Name ~= "ToggleButton" then
-            laser.CanCollide = false
-            table.insert(lasers, laser)
+	gateModel:SetAttribute("IsActive", false)
+	local lasers = {}
 
-            laser.Touched:Connect(function(otherPart)
-                if gateModel:GetAttribute("IsActive") == false then return end
-                local character = otherPart.Parent
-                local humanoid = character:FindFirstChild("Humanoid")
-                
-                if humanoid and humanoid.Health > 0 then
-                    local player = Players:GetPlayerFromCharacter(character)
-                    if not player then return end
-                    
-                    local plot = gateModel
-                    while plot and plot ~= workspace do
-                        if plot:GetAttribute("OwnerId") ~= nil then break end
-                        plot = plot.Parent
-                    end
+	for _, laser in ipairs(gateModel:GetChildren()) do
+		if laser:IsA("BasePart") and laser.Name ~= "ToggleButton" then
+			laser.CanCollide = false
+			table.insert(lasers, laser)
 
-                    if plot and plot:GetAttribute("OwnerId") ~= player.UserId then 
-                        humanoid.Health = 0
-                    end
-                end
-            end)
-        end
-    end
+			laser.Touched:Connect(function(otherPart)
+				if gateModel:GetAttribute("IsActive") == false then
+					return
+				end
+				local character = otherPart.Parent
+				local humanoid = character:FindFirstChild("Humanoid")
 
-    local isDebounce = false
-    
-    clickDetector.MouseClick:Connect(function(playerClicker)
-        if isDebounce then return end
+				if humanoid and humanoid.Health > 0 then
+					local player = Players:GetPlayerFromCharacter(character)
+					if not player then
+						return
+					end
 
-        local plot = gateModel
-        while plot and plot ~= workspace do
-            if plot:GetAttribute("OwnerId") ~= nil then break end
-            plot = plot.Parent
-        end
+					local plot = gateModel
+					while plot and plot ~= workspace do
+						if plot:GetAttribute("OwnerId") ~= nil then
+							break
+						end
+						plot = plot.Parent
+					end
 
-        if plot and plot:GetAttribute("OwnerId") == playerClicker.UserId then
-            isDebounce = true
-            
-            local isActive = gateModel:GetAttribute("IsActive")
-            local newState = not isActive
-            gateModel:SetAttribute("IsActive", newState)
-            
-            for _, laser in ipairs(lasers) do
-                if newState == true then
-                    laser.BrickColor = BrickColor.new("Really red")
-                else
-                    laser.BrickColor = BrickColor.new("Lime green")
-                end
-            end
+					if plot and plot:GetAttribute("OwnerId") ~= player.UserId then
+						humanoid.Health = 0
+					end
+				end
+			end)
+		end
+	end
 
-            if newState == true then
-                toggleButtonPart.Color = Color3.fromRGB(0, 255, 0)
-            else
-                toggleButtonPart.Color = Color3.fromRGB(255, 0, 0)
-            end
-            
-            task.wait(1)
-            isDebounce = false
-        end 
-    end)
+	local isDebounce = false
+
+	clickDetector.MouseClick:Connect(function(playerClicker)
+		if isDebounce then
+			return
+		end
+
+		local plot = gateModel
+		while plot and plot ~= workspace do
+			if plot:GetAttribute("OwnerId") ~= nil then
+				break
+			end
+			plot = plot.Parent
+		end
+
+		if plot and plot:GetAttribute("OwnerId") == playerClicker.UserId then
+			isDebounce = true
+
+			local isActive = gateModel:GetAttribute("IsActive")
+			local newState = not isActive
+			gateModel:SetAttribute("IsActive", newState)
+
+			for _, laser in ipairs(lasers) do
+				if newState == true then
+					laser.BrickColor = BrickColor.new("Really red")
+				else
+					laser.BrickColor = BrickColor.new("Lime green")
+				end
+			end
+
+			if newState == true then
+				toggleButtonPart.Color = Color3.fromRGB(0, 255, 0)
+			else
+				toggleButtonPart.Color = Color3.fromRGB(255, 0, 0)
+			end
+
+			task.wait(1)
+			isDebounce = false
+		end
+	end)
 end
 
 local function takeWeapon(weaponTube)
-    local plot = weaponTube
-    while plot and plot ~= workspace do
-        if plot:GetAttribute("OwnerId") ~= nil then 
-            break 
-        end
-        plot = plot.Parent
-    end
+	local plot = weaponTube
+	while plot and plot ~= workspace do
+		if plot:GetAttribute("OwnerId") ~= nil then
+			break
+		end
+		plot = plot.Parent
+	end
 
-    if not plot or plot == workspace then 
-        return 
-    end
-    local giverButton = weaponTube:FindFirstChild("Giverpart") or weaponTube:FindFirstChild("GiverPart")
-    if giverButton == nil then 
-        return 
-    end
+	if not plot or plot == workspace then
+		return
+	end
+	local giverButton = weaponTube:FindFirstChild("Giverpart") or weaponTube:FindFirstChild("GiverPart")
+	if giverButton == nil then
+		return
+	end
 
-    local weaponName = weaponTube:GetAttribute("WeaponName")
-    local weaponTemplate = TycoonAssets:FindFirstChild("Weapons"):FindFirstChild(weaponName)
-    local playerCooldowns = {}
-    
-    giverButton.Touched:Connect(function(otherPart)
-        
-        local character = otherPart.Parent
-        local humanoid = character:FindFirstChild("Humanoid")
-        local player = Players:GetPlayerFromCharacter(character)
+	local weaponName = weaponTube:GetAttribute("WeaponName")
+	local weaponTemplate = TycoonAssets:FindFirstChild("Weapons"):FindFirstChild(weaponName)
+	local playerCooldowns = {}
 
-        if not player or not humanoid or humanoid.Health <= 0 then 
-            return 
-        end
-        
-        if playerCooldowns[player.UserId] then 
-            return 
-        end
-        
-        local backpack = player:FindFirstChild("Backpack")
-        local hasInHand = character:FindFirstChild(weaponName)
-        local hasInBackpack = backpack and backpack:FindFirstChild(weaponName)
+	giverButton.Touched:Connect(function(otherPart)
+		local character = otherPart.Parent
+		local humanoid = character:FindFirstChild("Humanoid")
+		local player = Players:GetPlayerFromCharacter(character)
 
-        if not hasInHand and not hasInBackpack then
-            
-            if weaponTemplate then
-                playerCooldowns[player.UserId] = true
-                
-                local newWeapon = weaponTemplate:Clone()
-                newWeapon.Parent = backpack
-            
-                task.wait(2)
-                
-                playerCooldowns[player.UserId] = nil 
-            else
-                
-            end
-        else
-        end
-    end)
+		if not player or not humanoid or humanoid.Health <= 0 then
+			return
+		end
+
+		if playerCooldowns[player.UserId] then
+			return
+		end
+
+		local backpack = player:FindFirstChild("Backpack")
+		local hasInHand = character:FindFirstChild(weaponName)
+		local hasInBackpack = backpack and backpack:FindFirstChild(weaponName)
+
+		if not hasInHand and not hasInBackpack then
+			if weaponTemplate then
+				playerCooldowns[player.UserId] = true
+
+				local newWeapon = weaponTemplate:Clone()
+				newWeapon.Parent = backpack
+
+				task.wait(2)
+
+				playerCooldowns[player.UserId] = nil
+			else
+			end
+		else
+		end
+	end)
 end
 
 for _, plot in ipairs(Plots) do
-    claimPlot(plot)
-    initializePlot(plot)
+	task.spawn(function()
+		claimPlot(plot)
+		initializePlot(plot)
+	end)
 end
 
 setupButton(Buttons)
 
 for _, button in ipairs(Buttons) do
-    local plot = button.Parent:FindFirstAncestorOfClass("Model")
-    if plot then
-        purchaseObject(button, plot)
-    end
+	local plot = button.Parent:FindFirstAncestorOfClass("Model")
+	if plot then
+		purchaseObject(button, plot)
+	end
 end
 
 CollectionService:GetInstanceAddedSignal("Buttons"):Connect(function(newButton)
-    task.wait(0.1)
-    setupButton({newButton})
-    local plot = newButton.Parent:FindFirstAncestorOfClass("Model")
-    if plot then
-        purchaseObject(newButton, plot)
-    end
+	task.wait(0.1)
+	setupButton({ newButton })
+	local plot = newButton.Parent:FindFirstAncestorOfClass("Model")
+	if plot then
+		purchaseObject(newButton, plot)
+	end
 end)
 
 for _, gate in ipairs(CollectionService:GetTagged("OwnerDoors")) do
-    task.spawn(function()
-        setupLaserGate(gate)
-    end)
+	task.spawn(function()
+		setupLaserGate(gate)
+	end)
 end
 
 CollectionService:GetInstanceAddedSignal("OwnerDoors"):Connect(function(newGate)
-    task.spawn(function()
-        setupLaserGate(newGate)
-    end)
+	task.spawn(function()
+		setupLaserGate(newGate)
+	end)
 end)
 
 CollectionService:GetInstanceAddedSignal("Weapons"):Connect(function(newWeapon)
-    
-    task.defer(function()
-        takeWeapon(newWeapon)
-    end)
+	task.defer(function()
+		takeWeapon(newWeapon)
+	end)
 end)
