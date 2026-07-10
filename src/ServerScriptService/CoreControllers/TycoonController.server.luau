@@ -7,8 +7,9 @@ local Players = game:GetService("Players")
 local Configs = ReplicatedStorage:WaitForChild("Configs")
 local ButtonConfig = require(Configs:WaitForChild("ButtonDependencyGraph"))
 
-local Events = ReplicatedStorage:WaitForChild("Events")
-local BindableEvents = Events:WaitForChild("BindableEvents")
+local Bindable = ReplicatedStorage:WaitForChild("Bindable")
+local BindEvents = Bindable:WaitForChild("Event")
+local BindFunctions = Bindable:WaitForChild("Function")
 
 local Plots = CollectionService:GetTagged("Plots")
 local Buttons = CollectionService:GetTagged("Buttons")
@@ -57,6 +58,15 @@ local function claimPlot(plot)
 		    randomSound:Play()
 
             claimDoor:Destroy()
+
+            local GetAllPurchase = BindFunctions:WaitForChild("GetAllPurchase")
+            if GetAllPurchase then 
+                local oldPurchaseData = GetAllPurchase:Invoke(player)
+                if oldPurchaseData then
+                    
+                end
+            end
+
         end
     end)
 end
@@ -258,9 +268,9 @@ local function purchaseObject(button, plot)
                 newObject:SetAttribute("IsActive", true)
                 newObject.Parent = purchasedObjectsFolder:FindFirstChild(ButtonData.Type)
 
-                local PurchaseEvent = BindableEvents:WaitForChild("PurchaseEvent")
+                local PurchaseEvent = BindEvents:WaitForChild("PurchaseEvent")
                 if PurchaseEvent then
-                    PurchaseEvent:Fire(player, ButtonData)
+                    PurchaseEvent:Fire(player, button.Name)
                 end
 
                 local coinSounds = SoundService:WaitForChild("PurchaseSounds")
