@@ -17,6 +17,8 @@ local Buttons = CollectionService:GetTagged("Buttons")
 local StarterPlotTemplate = ServerStorage:WaitForChild("StarterPlot", 5)
 local TycoonAssets = ServerStorage:WaitForChild("TycoonAssets", 5)
 
+local playersPurchased = {}
+
 local function claimPlot(plot)
 	local claimDoor = plot:WaitForChild("ClaimDoor", 5)
 
@@ -56,9 +58,7 @@ local function claimPlot(plot)
 				plotBillboard.Enabled = true
 			end
 
-			plot:SetAttribute("IsClaimed", true)
-			player:SetAttribute("HasPlot", true)
-
+			
 			local coinSounds = SoundService:WaitForChild("PurchaseSounds")
 			local randomSound = coinSounds:GetChildren()[math.random(1, #coinSounds:GetChildren())]
 			randomSound:Play()
@@ -66,18 +66,13 @@ local function claimPlot(plot)
 			claimDoor:Destroy()
 
 			local GetAllPurchase = BindFunctions:WaitForChild("GetAllPurchase")
-			if GetAllPurchase then
-				local oldPurchaseData = GetAllPurchase:Invoke(player)
-
-				if not oldPurchaseData then
-					print("Data tidak ada")
-					return
-				end
-				for _, object in ipairs(oldPurchaseData) do
-					print(object)
-				end
+				if GetAllPurchase then
+					local oldPurchaseData = GetAllPurchase:Invoke(player) or {}
+                	playersPurchased["Player_" .. player.UserId] = oldPurchaseData
+            	end
 			end
-		end
+			plot:SetAttribute("IsClaimed", true)
+			player:SetAttribute("HasPlot", true)
 	end)
 end
 
@@ -121,23 +116,12 @@ local function initializePlot(plot)
 			warn("[WARN] Missing PrimaryPart on plot or template for " .. plot.Name)
 		end
 
-		local buttonFolder = masterClone:FindFirstChild("Buttons")
-		if buttonFolder then
-			for _, button in ipairs(buttonFolder:GetChildren()) do
-				if button.Name ~= "BtnDropper1" then
-					button.Transparency = 1
-					button.CanCollide = false
-					button.ButtonPrice.Enabled = false
-				end
-			end
-		end
-
 		for _, clonedChild in ipairs(masterClone:GetChildren()) do
 			local targetFolder = clonedChild:GetAttribute("Destination")
-
+			
 			if targetFolder == "Plot" or targetFolder == "plot" then
 				clonedChild.Parent = plot
-			elseif targetFolder ~= nil then
+				elseif targetFolder ~= nil then
 				local destination = plot:FindFirstChild(targetFolder)
 				if destination then
 					clonedChild.Parent = destination
@@ -160,9 +144,59 @@ local function initializePlot(plot)
 				end
 			end
 		end
+		
+		local buttonFolder = plot:FindFirstChild("Buttons")
+		
+		local playerKey = "Player_" .. plot:GetAttribute("OwnerId")
+		local savedList = playersPurchased[playerKey] or {}
+		for _, asset in ipairs(TycoonAssets:GetChildren()) do 
+			local assetName = asset.Name
+
+			if table.find(savedList, assetName) then
+				local ButtonData = ButtonConfig[assetName]
+				if not ButtonData then continue end
+
+				local templateFolder = TycoonAssets:FindFirstChild(ButtonData.Type)
+				local templateItem = templateFolder and templateFolder:FindFirstChild(ButtonData.Target)
+
+				if templateItem then 
+					local newObject = templateItem:Clone()
+					newObject.Name = assetName .. "_Asset"
+					
+					local PlacementNodesFolder = plot:FindFirstChild("PlacementNodes")
+					local targetNode = PlacementNodesFolder and PlacementNodesFolder:FindFirstChild("Node_" .. assetName)
+					
+					if targetNode then
+						newObject:PivotTo(targetNode.CFrame)
+					end
+	
+					newObject:SetAttribute("IsActive", true)
+					newObject.Parent = plot:FindFirstChild("PurchasedObjects"):FindFirstChild(ButtonData.Type)
+					local destFolder = plot:FindFirstChild("PurchasedObjects")
+                    if destFolder then
+                        newObject.Parent = destFolder:FindFirstChild(ButtonData.Type) or destFolder
+                    end
+				end
+
+				if buttonFolder and buttonFolder:FindFirstChild(assetName) then
+                    buttonFolder:FindFirstChild(assetName):Destroy()
+                end
+			else
+				local buttonSpecific = buttonFolder and buttonFolder:FindFirstChild(assetName)
+                
+                if buttonSpecific and assetName ~= "BtnDropper1" then
+                    buttonSpecific.Transparency = 1
+                    buttonSpecific.CanCollide = false
+                    if buttonSpecific:FindFirstChild("ButtonPrice") then
+                        buttonSpecific.ButtonPrice.Enabled = false
+                    end
+                end
+			end
+		end
 		masterClone:Destroy()
 	end)
 end
+
 
 local function setupButton(buttons)
 	for _, button in ipairs(buttons) do
@@ -296,8 +330,9 @@ local function purchaseObject(button, plot)
 				newObject:SetAttribute("IsActive", true)
 				newObject.Parent = purchasedObjectsFolder:FindFirstChild(ButtonData.Type)
 
-				local PurchaseEvent = BindEvents:WaitForChild("PurchaseEvent")
+				local PurchaseEvent = BindEvents:WaitForChild("GetPurchaseData")
 				if PurchaseEvent then
+					print("Button " .. button.Name .. " Purchased")
 					PurchaseEvent:Fire(player, button.Name)
 				end
 

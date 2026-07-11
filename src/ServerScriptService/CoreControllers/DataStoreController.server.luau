@@ -2,7 +2,7 @@ local DataStoreService = game:GetService("DataStoreService")
 local ServerStorage = game:GetService("ServerStorage") 
 local Players = game:GetService("Players")
 
-local playerData = DataStoreService:GetDataStore("PlayerDataTest")
+local playerData = DataStoreService:GetDataStore("PlayerDataTesting")
 
 local Bindable = ServerStorage:WaitForChild("Bindable")
 local BindEvents = Bindable:WaitForChild("Event")
@@ -29,8 +29,6 @@ BindFunctions:WaitForChild("GetAllPurchase").OnInvoke = function(player)
 end
 
 Players.PlayerAdded:Connect(function(player)
-	-- PERINGATAN: Pastikan skrip pembuat leaderstats tidak ikut menunggu DataStore, 
-	-- agar tidak terjadi infinite loading (deadlock)
 	player:WaitForChild("leaderstats")
 
 	local leaderstats = player:FindFirstChild("leaderstats")

@@ -2,15 +2,13 @@
   "name": "Untitled Tycoon Game",
   "tree": {
     "$className": "DataModel",
-
-"ReplicatedStorage": {
+    "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "$path": "src/ReplicatedStorage",
       "Packages": {
         "$path": "Packages"
       }
     },
-
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "$path": "src/ServerScriptService",
@@ -18,7 +16,6 @@
         "$path": "ServerPackages"
       }
     },
-
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
@@ -30,19 +27,9 @@
         "$path": "src/StarterPlayer/StarterCharacterScripts"
       }
     },
-
     "Workspace": {
       "$properties": {
         "FilteringEnabled": true
-      }
-    },
-    "Lighting": {
-      "$properties": {
-        "Ambient": [0, 0, 0],
-        "Brightness": 2,
-        "GlobalShadows": false,
-        "Outlines": false,
-        "Technology": "Voxel"
       }
     },
     "SoundService": {
