@@ -58,7 +58,6 @@ local function claimPlot(plot)
 				plotBillboard.Enabled = true
 			end
 
-			
 			local coinSounds = SoundService:WaitForChild("PurchaseSounds")
 			local randomSound = coinSounds:GetChildren()[math.random(1, #coinSounds:GetChildren())]
 			randomSound:Play()
@@ -66,13 +65,13 @@ local function claimPlot(plot)
 			claimDoor:Destroy()
 
 			local GetAllPurchase = BindFunctions:WaitForChild("GetAllPurchase")
-				if GetAllPurchase then
-					local oldPurchaseData = GetAllPurchase:Invoke(player) or {}
-                	playersPurchased["Player_" .. player.UserId] = oldPurchaseData
-            	end
+			if GetAllPurchase then
+				local oldPurchaseData = GetAllPurchase:Invoke(player) or {}
+				playersPurchased["Player_" .. player.UserId] = oldPurchaseData
 			end
-			plot:SetAttribute("IsClaimed", true)
-			player:SetAttribute("HasPlot", true)
+		end
+		plot:SetAttribute("IsClaimed", true)
+		player:SetAttribute("HasPlot", true)
 	end)
 end
 
@@ -118,10 +117,10 @@ local function initializePlot(plot)
 
 		for _, clonedChild in ipairs(masterClone:GetChildren()) do
 			local targetFolder = clonedChild:GetAttribute("Destination")
-			
+
 			if targetFolder == "Plot" or targetFolder == "plot" then
 				clonedChild.Parent = plot
-				elseif targetFolder ~= nil then
+			elseif targetFolder ~= nil then
 				local destination = plot:FindFirstChild(targetFolder)
 				if destination then
 					clonedChild.Parent = destination
@@ -144,77 +143,92 @@ local function initializePlot(plot)
 				end
 			end
 		end
-		
+
 		local buttonFolder = plot:FindFirstChild("Buttons")
-		
 		local playerKey = "Player_" .. plot:GetAttribute("OwnerId")
 		local savedList = playersPurchased[playerKey] or {}
-		for _, asset in ipairs(TycoonAssets:GetChildren()) do 
-			local assetName = asset.Name
 
+		for assetName, ButtonData in pairs(ButtonConfig) do
+			
 			if table.find(savedList, assetName) then
-				local ButtonData = ButtonConfig[assetName]
-				if not ButtonData then continue end
+				print("[TYCOON] Memuat aset lama: " .. assetName)
 
 				local templateFolder = TycoonAssets:FindFirstChild(ButtonData.Type)
 				local templateItem = templateFolder and templateFolder:FindFirstChild(ButtonData.Target)
 
-				if templateItem then 
+				if templateItem then
 					local newObject = templateItem:Clone()
 					newObject.Name = assetName .. "_Asset"
-					
+
 					local PlacementNodesFolder = plot:FindFirstChild("PlacementNodes")
 					local targetNode = PlacementNodesFolder and PlacementNodesFolder:FindFirstChild("Node_" .. assetName)
-					
+
 					if targetNode then
 						newObject:PivotTo(targetNode.CFrame)
 					end
-	
+
+					applyPlotColor(newObject, plotColor)
+
 					newObject:SetAttribute("IsActive", true)
-					newObject.Parent = plot:FindFirstChild("PurchasedObjects"):FindFirstChild(ButtonData.Type)
+					
 					local destFolder = plot:FindFirstChild("PurchasedObjects")
-                    if destFolder then
-                        newObject.Parent = destFolder:FindFirstChild(ButtonData.Type) or destFolder
-                    end
+					if destFolder then
+						local subFolder = destFolder:FindFirstChild(ButtonData.Type)
+						newObject.Parent = subFolder or destFolder
+					end
 				end
 
 				if buttonFolder and buttonFolder:FindFirstChild(assetName) then
-                    buttonFolder:FindFirstChild(assetName):Destroy()
-                end
+					buttonFolder:FindFirstChild(assetName):Destroy()
+				end
+
 			else
 				local buttonSpecific = buttonFolder and buttonFolder:FindFirstChild(assetName)
-                
-                if buttonSpecific and assetName ~= "BtnDropper1" then
-                    buttonSpecific.Transparency = 1
-                    buttonSpecific.CanCollide = false
-                    if buttonSpecific:FindFirstChild("ButtonPrice") then
-                        buttonSpecific.ButtonPrice.Enabled = false
-                    end
-                end
+
+				if buttonSpecific and assetName ~= "BtnDropper1" then
+					pcall(function()
+						buttonSpecific.Transparency = 1
+						buttonSpecific.CanCollide = false
+						if buttonSpecific:FindFirstChild("ButtonPrice") then
+							buttonSpecific.ButtonPrice.Enabled = false
+						end
+					end)
+				end
 			end
 		end
+		
 		masterClone:Destroy()
 	end)
 end
 
-
 local function setupButton(buttons)
-	for _, button in ipairs(buttons) do
-		local buttonData = ButtonConfig[button.Name]
-		if buttonData == nil then
-			print("[WARN] Configuration data missing for button name: " .. tostring(button.Name))
-			return
-		end
-		local priceTag = button:FindFirstChild("ButtonPrice"):FindFirstChild("ButtonFrame")
-		local buttonLabel = priceTag:FindFirstChild("ButtonLabel")
-		local priceLabel = priceTag:FindFirstChild("ButtonPriceLabel")
-		if priceLabel ~= nil and buttonLabel ~= nil then
-			buttonLabel.Text = buttonData.Name
-			priceLabel.Text = "$" .. buttonData.Price
-		else
-			print("[WARN] Visual text elements missing inside ButtonPrice for: " .. button.Name)
-		end
-	end
+    for _, button in ipairs(buttons) do
+        local buttonData = ButtonConfig[button.Name]
+        if buttonData == nil then
+            print("[WARN] Configuration data missing for button name: " .. tostring(button.Name))
+            continue 
+        end
+    
+        local buttonPrice = button:FindFirstChild("ButtonPrice")
+        if not buttonPrice then 
+            continue 
+        end
+        
+        local priceTag = buttonPrice:FindFirstChild("ButtonFrame")
+        if not priceTag then 
+            continue 
+        end
+
+        local buttonLabel = priceTag:FindFirstChild("ButtonLabel")
+        local priceLabel = priceTag:FindFirstChild("ButtonPriceLabel")
+        
+        if priceLabel ~= nil and buttonLabel ~= nil then
+            buttonLabel.Text = buttonData.Name
+            priceLabel.Text = "$" .. buttonData.Price
+        else
+            print("[WARN] Visual text elements missing inside ButtonPrice for: " .. button.Name)
+        end
+    end
 end
 
 local function purchaseObject(button, plot)
@@ -502,6 +516,10 @@ end
 
 CollectionService:GetInstanceAddedSignal("Buttons"):Connect(function(newButton)
 	task.wait(0.1)
+	if not newButton or not newButton.Parent then
+		return -- Jika sudah hancur, batalkan prosesnya dengan tenang
+	end
+
 	setupButton({ newButton })
 	local plot = newButton.Parent:FindFirstAncestorOfClass("Model")
 	if plot then

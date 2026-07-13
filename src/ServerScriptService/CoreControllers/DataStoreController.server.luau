@@ -2,7 +2,7 @@ local DataStoreService = game:GetService("DataStoreService")
 local ServerStorage = game:GetService("ServerStorage") 
 local Players = game:GetService("Players")
 
-local playerData = DataStoreService:GetDataStore("PlayerDataTesting")
+local playerData = DataStoreService:GetDataStore("PlayerDataV1")
 
 local Bindable = ServerStorage:WaitForChild("Bindable")
 local BindEvents = Bindable:WaitForChild("Event")
@@ -21,6 +21,7 @@ BindFunctions:WaitForChild("GetAllPurchase").OnInvoke = function(player)
 	local playerKey = "Player_" .. player.UserId
 	
 	if sessionData[playerKey] then
+		print("Mengirim data " .. playerKey)
 		return sessionData[playerKey].Purchased or {}
 	else
 		warn("[DATA-WARNING] Skrip Tycoon meminta data sebelum DataStore selesai memuat untuk " .. player.Name)

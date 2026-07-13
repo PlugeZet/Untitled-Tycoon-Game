@@ -15,6 +15,7 @@ local Collectors = CollectionService:GetTagged("Collectors")
 
 local ItemTemplate = ServerStorage.TycoonAssets:WaitForChild("Drops").Drop
 local conveyorSpeed = 10
+local dropperCooldown = 4
 
 -- =================================
 -- Functions
@@ -43,7 +44,7 @@ local function spawnItem(dropper)
 			clonedItem.Parent = workspace:WaitForChild("DropHandler")
 			Debris:AddItem(clonedItem, 20)
 		end
-		task.wait(5)
+		task.wait(dropperCooldown)
 	end
 end
 
